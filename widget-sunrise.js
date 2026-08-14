@@ -1151,6 +1151,36 @@
                 inlineBtn.addEventListener('mouseleave', function () { inlineBtn.style.background = '#fff'; inlineBtn.style.color = _accent; });
             } catch (_) {}
             buyBtn.parentNode.insertBefore(inlineBtn, buyBtn);
+            // Iguala o botao ao "Comprar" DEPOIS de inserido: neste tema o botao de compra tem
+            // largura fixa (nao e 100% do container), entao copiar so o padding deixava o
+            // provador mais largo e mais baixo. Mede em runtime porque o valor muda por produto.
+            (function igualaAoComprar() {
+                var aplica = function () {
+                    try {
+                        var r = buyBtn.getBoundingClientRect();
+                        if (!r.width || r.width < 60) return;   // botao oculto: nao mexe
+                        var cb = getComputedStyle(buyBtn);
+                        inlineBtn.style.width = Math.round(r.width) + 'px';
+                        inlineBtn.style.height = Math.round(r.height) + 'px';
+                        inlineBtn.style.padding = cb.padding;
+                        inlineBtn.style.borderRadius = cb.borderRadius;
+                        inlineBtn.style.whiteSpace = 'nowrap';
+                        inlineBtn.style.overflow = 'hidden';
+                        inlineBtn.style.letterSpacing = '0.5px';
+                        var svg = inlineBtn.querySelector('svg');
+                        if (svg) { svg.style.width = '16px'; svg.style.height = '16px'; }
+                        var fs = parseFloat(cb.fontSize) || 16;
+                        inlineBtn.style.fontSize = fs + 'px';
+                        // encolhe a fonte ate o texto caber numa linha so
+                        for (var i = 0; i < 24 && inlineBtn.scrollWidth > inlineBtn.clientWidth + 2 && fs > 9; i++) {
+                            fs -= 0.5; inlineBtn.style.fontSize = fs + 'px';
+                        }
+                    } catch (_) {}
+                };
+                requestAnimationFrame(aplica);
+                setTimeout(aplica, 600);          // tema troca variante/preco depois do load
+                window.addEventListener('resize', aplica);
+            })();
         } else {
             const variantsContainer = document.querySelector('.js-product-variants');
             if (variantsContainer) {
