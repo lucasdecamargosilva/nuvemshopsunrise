@@ -1157,9 +1157,19 @@
             (function igualaAoComprar() {
                 var aplica = function () {
                     try {
-                        var r = buyBtn.getBoundingClientRect();
-                        if (!r.width || r.width < 60) return;   // botao oculto: nao mexe
-                        var cb = getComputedStyle(buyBtn);
+                        // o buyBtn achado pelo widget pode ser um duplicado OCULTO do tema
+                        // (display:none, largura 0). Procura o botao de compra que o cliente
+                        // realmente ve, senao nao ha medida pra copiar.
+                        var alvo = null;
+                        document.querySelectorAll('.buy-lente, .js-addtocart, .js-prod-submit-form, .btn-add-to-cart').forEach(function (el) {
+                            if (alvo || el === inlineBtn) return;
+                            var rr = el.getBoundingClientRect();
+                            if (rr.width > 60 && rr.height > 20) alvo = el;
+                        });
+                        if (!alvo) alvo = buyBtn;
+                        var r = alvo.getBoundingClientRect();
+                        if (!r.width || r.width < 60) return;   // nada visivel pra copiar
+                        var cb = getComputedStyle(alvo);
                         inlineBtn.style.width = Math.round(r.width) + 'px';
                         inlineBtn.style.height = Math.round(r.height) + 'px';
                         inlineBtn.style.padding = cb.padding;
