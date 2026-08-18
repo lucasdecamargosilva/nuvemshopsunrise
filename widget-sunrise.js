@@ -1,4 +1,19 @@
 (function () {
+    // Nao provar LENTE: a loja vende lente avulsa junto com armacao, e provar uma lente
+    // no rosto nao faz sentido. A categoria vem do breadcrumb ("Inicio > Lentes > ..."),
+    // que e o unico sinal confiavel aqui — o slug das lentes nao tem padrao
+    // (sem-grau-antirreflexo-uv400, policarbonato-..., anti-blue-...) e LS.product nao
+    // traz as categorias. As armacoes caem em "Armacoes > ..." e seguem com o provador.
+    try {
+        var _trilha = Array.prototype.slice
+            .call(document.querySelectorAll('.breadcrumb a, [class*="breadcrumb"] a'))
+            .map(function (a) { return (a.textContent || '').trim(); });
+        if (_trilha.some(function (t) { return /^lentes?/i.test(t); })) {
+            console.log('[PL] Pagina de lente — provador nao carrega aqui.');
+            return;
+        }
+    } catch (e) {}
+
     function isValidBRPhone(nums) {
         function setErr(msg) {
             var el = document.getElementById('q-phone-error');
