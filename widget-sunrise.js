@@ -1,18 +1,42 @@
 (function () {
     // Nao provar LENTE: a loja vende lente avulsa junto com armacao, e provar uma lente
     // no rosto nao faz sentido. A categoria vem do breadcrumb ("Inicio > Lentes > ..."),
-    // que e o unico sinal confiavel aqui — o slug das lentes nao tem padrao
-    // (sem-grau-antirreflexo-uv400, policarbonato-..., anti-blue-...) e LS.product nao
-    // traz as categorias. As armacoes caem em "Armacoes > ..." e seguem com o provador.
-    try {
-        var _trilha = Array.prototype.slice
-            .call(document.querySelectorAll('.breadcrumb a, [class*="breadcrumb"] a'))
-            .map(function (a) { return (a.textContent || '').trim(); });
-        if (_trilha.some(function (t) { return /^lentes?/i.test(t); })) {
-            console.log('[PL] Pagina de lente — provador nao carrega aqui.');
-            return;
-        }
-    } catch (e) {}
+    // que e o sinal principal — o slug das lentes nao tem padrao (sem-grau-antirreflexo-
+    // uv400, policarbonato-..., anti-blue-...) e LS.product nao traz as categorias.
+    // As armacoes caem em "Armacoes > ..." e seguem com o provador.
+    // O script chega via GTM e executa antes do body estar parseado, entao a checagem
+    // roda aqui (barato, pega carregamento tardio) E de novo dentro do init(), quando o
+    // breadcrumb do body ja existe no DOM — so o load do script nao basta.
+    function isLensPage() {
+        try {
+            // 1) Breadcrumb visivel: texto "Lentes..." ou link apontando pra /lentes/
+            var crumbs = document.querySelectorAll('.breadcrumb a, [class*="breadcrumb"] a');
+            for (var i = 0; i < crumbs.length; i++) {
+                var txt = (crumbs[i].textContent || '').trim();
+                var href = crumbs[i].getAttribute('href') || '';
+                if (/^lentes?\b/i.test(txt)) return true;
+                if (/\/lentes(\/|$)/i.test(href)) return true;
+            }
+            // 2) JSON-LD BreadcrumbList (a Nuvemshop renderiza no <head>, disponivel cedo)
+            var lds = document.querySelectorAll('script[type="application/ld+json"]');
+            for (var j = 0; j < lds.length; j++) {
+                var raw = lds[j].textContent || '';
+                if (!/BreadcrumbList/i.test(raw)) continue;
+                if (/"item"\s*:\s*"[^"]*\/lentes\//i.test(raw)) return true;
+                if (/"name"\s*:\s*"lentes?\b/i.test(raw)) return true;
+            }
+            // 3) Nome do produto comecando com "Lente(s)" (h1 / og:title / title)
+            var ogEl = document.querySelector('meta[property="og:title"]');
+            var h1El = document.querySelector('h1.product__title,.product-single__title,h1');
+            var nome = (h1El && h1El.innerText) || (ogEl && ogEl.getAttribute('content')) || document.title || '';
+            if (/^\s*lentes?\b/i.test(nome)) return true;
+        } catch (e) {}
+        return false;
+    }
+    if (isLensPage()) {
+        console.log('[PL] Pagina de lente — provador nao carrega aqui.');
+        return;
+    }
 
     function isValidBRPhone(nums) {
         function setErr(msg) {
@@ -1024,6 +1048,13 @@
 
 
     function init() {
+        // Recheca lente aqui: no load do script (via GTM) o body ainda nao tinha sido
+        // parseado e o breadcrumb nao existia — agora o DOM esta pronto.
+        if (isLensPage()) {
+            console.log('[PL] Pagina de lente — provador nao carrega aqui.');
+            return;
+        }
+
         // --- FILTRO DE CATEGORIA (HAT) ---
         const productNameNormalized = (document.querySelector('h1.product__title,.product-single__title,h1')?.innerText || document.title).toUpperCase();
         if (productNameNormalized.includes('HAT')) {
