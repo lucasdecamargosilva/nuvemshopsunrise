@@ -1291,6 +1291,42 @@
             return url;
         }
 
+        // Foto da VARIANTE selecionada (cor escolhida pelo cliente).
+        // Na Sunrise cada variante de cor tem a foto daquela cor NO ROSTO da modelo, entao
+        // ela e' a melhor referencia possivel: acerta cor E posicionamento de uma vez.
+        // Fonte: #shipping-variant-id (o tema atualiza a cada clique de cor) cruzado com o
+        // JSON [data-variants]. Fallback extra: o botao .js-btn-variation.selected.
+        // Se nada casar retorna '' e o fluxo antigo (rosto/galeria) segue igual.
+        function plVariantImg() {
+            try {
+                var el = document.querySelector('#shipping-variant-id, [name="variant_id"]');
+                var vid = el && String(el.value || '');
+                var selBtn = document.querySelector('.js-btn-variation.selected');
+                var selName = selBtn && String(selBtn.getAttribute('data-option') || '').trim().toLowerCase();
+                var blocos = document.querySelectorAll('[data-variants]');
+                for (var b = 0; b < blocos.length; b++) {
+                    var arr;
+                    try { arr = JSON.parse(blocos[b].getAttribute('data-variants')); } catch (e) { continue; }
+                    if (!arr || !arr.length) continue;
+                    var achou = null;
+                    if (vid) {
+                        for (var i = 0; i < arr.length; i++) { if (String(arr[i].id) === vid) { achou = arr[i]; break; } }
+                    }
+                    if (!achou && selName) {
+                        for (var j = 0; j < arr.length; j++) {
+                            if (String(arr[j].option0 || '').trim().toLowerCase() === selName) { achou = arr[j]; break; }
+                        }
+                    }
+                    if (achou && achou.image_url) {
+                        var u = String(achou.image_url);
+                        if (u.indexOf('//') === 0) u = location.protocol + u;
+                        return upgradeImgUrl(u);
+                    }
+                }
+            } catch (e) {}
+            return '';
+        }
+
         function extractImages() {
             const containersSelectors = '.js-product-slide, .product-image-column, .js-swiper-product, [data-store^="product-image-"], .product__media-wrapper, .product-gallery__media, .product__media, .product-image-main, .product-media-container, [data-media-id], .product__media-item, .product-gallery, .product-single__media, .media-gallery, [data-component="product.gallery"], .swiper-slide:not(.swiper-slide-duplicate), .slider-wrapper';
             const possibleContainers = Array.from(document.querySelectorAll(containersSelectors));
@@ -2065,13 +2101,22 @@ const fd = new FormData();
                     // Sem rosto detectado → mantém as fotos default (fallback, sem regressão).
                     try {
                         if (faceDetectPromise) { await Promise.race([faceDetectPromise, new Promise(function (r) { setTimeout(r, 4000); })]); }
-                        if (_faceUrls && _faceUrls.length) {
+                        // Prioridade da foto PRINCIPAL (a 1a e' a referencia forte do gerador):
+                        //   1) foto da VARIANTE selecionada — ja e' a cor certa no rosto da modelo;
+                        //   2) foto com rosto detectado;
+                        //   3) galeria como veio.
+                        // A variante vem antes do rosto de proposito: mandar a cor errada e' pior
+                        // que mandar packshot, e o detector as vezes nao acha rosto de perfil
+                        // (caso Round Paris, 28/08/2026) e ai a ordem caia na galeria crua.
+                        var _varImg = (typeof plVariantImg === 'function') ? plVariantImg() : '';
+                        if (_varImg || (_faceUrls && _faceUrls.length)) {
                             var _key = function (u) { return String(u || '').split('?')[0]; };
                             var _ordenado = [];
                             var _add = function (u) {
                                 if (u && !_ordenado.some(function (x) { return _key(x) === _key(u); })) _ordenado.push(u);
                             };
-                            _faceUrls.forEach(_add);        // rosto primeiro (principal)
+                            _add(_varImg);                  // variante selecionada (principal)
+                            (_faceUrls || []).forEach(_add); // depois as fotos com rosto
                             allProdImgs.forEach(_add);      // depois o resto da galeria
                             allProdImgs = _ordenado;
                         }
