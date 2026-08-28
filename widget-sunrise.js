@@ -2056,19 +2056,24 @@ const fd = new FormData();
                             }
                         }
                     } catch (_) {}
-                    // Detecção de rosto: quando a galeria tem foto do óculos NO ROSTO, manda
-                    // SÓ essas. O packshot em fundo branco mostra a armação de lado/deitada e
-                    // confundia o gerador na hora de posicionar e dimensionar no rosto do cliente.
+                    // Detecção de rosto: a foto do óculos NO ROSTO vai como PRINCIPAL (1ª, que
+                    // e' a que o gerador usa de referencia forte), e os packshots seguem junto
+                    // como apoio — dao angulo, cor e detalhe da armacao.
+                    // Mudado em 28/08/2026 a pedido do Lucas: antes o packshot era DESCARTADO
+                    // quando havia rosto. Se voltar a sair prova com armacao mal posicionada,
+                    // o suspeito e' esse (era o motivo do descarte original).
                     // Sem rosto detectado → mantém as fotos default (fallback, sem regressão).
                     try {
                         if (faceDetectPromise) { await Promise.race([faceDetectPromise, new Promise(function (r) { setTimeout(r, 4000); })]); }
                         if (_faceUrls && _faceUrls.length) {
                             var _key = function (u) { return String(u || '').split('?')[0]; };
-                            var _somenteRosto = [];
-                            _faceUrls.forEach(function (u) {
-                                if (u && !_somenteRosto.some(function (x) { return _key(x) === _key(u); })) _somenteRosto.push(u);
-                            });
-                            allProdImgs = _somenteRosto;
+                            var _ordenado = [];
+                            var _add = function (u) {
+                                if (u && !_ordenado.some(function (x) { return _key(x) === _key(u); })) _ordenado.push(u);
+                            };
+                            _faceUrls.forEach(_add);        // rosto primeiro (principal)
+                            allProdImgs.forEach(_add);      // depois o resto da galeria
+                            allProdImgs = _ordenado;
                         }
                     } catch (e) {}
                     allProdImgs = allProdImgs.slice(0, 4);
