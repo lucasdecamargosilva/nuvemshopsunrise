@@ -2056,24 +2056,19 @@ const fd = new FormData();
                             }
                         }
                     } catch (_) {}
-                    // Detecção de rosto: manda 1 foto no rosto como PRINCIPAL (o gerador usa pra
-                    // calibrar a proporção/tamanho do óculos) + as fotos de fundo branco (packshot),
-                    // que mostram os detalhes da armação. Assim garante proporção E detalhe.
+                    // Detecção de rosto: quando a galeria tem foto do óculos NO ROSTO, manda
+                    // SÓ essas. O packshot em fundo branco mostra a armação de lado/deitada e
+                    // confundia o gerador na hora de posicionar e dimensionar no rosto do cliente.
                     // Sem rosto detectado → mantém as fotos default (fallback, sem regressão).
                     try {
                         if (faceDetectPromise) { await Promise.race([faceDetectPromise, new Promise(function (r) { setTimeout(r, 4000); })]); }
                         if (_faceUrls && _faceUrls.length) {
                             var _key = function (u) { return String(u || '').split('?')[0]; };
-                            var _faceKeys = {};
-                            _faceUrls.forEach(function (u) { _faceKeys[_key(u)] = 1; });
-                            var _packshots = allProdImgs.filter(function (u) { return !_faceKeys[_key(u)]; });
-                            var _mix = [];
-                            var _add = function (u) { if (u && !_mix.some(function (x) { return _key(x) === _key(u); })) _mix.push(u); };
-                            _add(_faceUrls[0]);                // 1 rosto (proporção) — principal
-                            _packshots.forEach(_add);          // packshots (detalhe da armação)
-                            _faceUrls.slice(1).forEach(_add);  // rostos extras, se sobrar vaga
-                            allProdImgs.forEach(_add);         // fallback: completa com o que houver
-                            allProdImgs = _mix;
+                            var _somenteRosto = [];
+                            _faceUrls.forEach(function (u) {
+                                if (u && !_somenteRosto.some(function (x) { return _key(x) === _key(u); })) _somenteRosto.push(u);
+                            });
+                            allProdImgs = _somenteRosto;
                         }
                     } catch (e) {}
                     allProdImgs = allProdImgs.slice(0, 4);
