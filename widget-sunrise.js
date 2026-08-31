@@ -2095,29 +2095,30 @@ const fd = new FormData();
                     // Detecção de rosto: a foto do óculos NO ROSTO vai como PRINCIPAL (1ª, que
                     // e' a que o gerador usa de referencia forte), e os packshots seguem junto
                     // como apoio — dao angulo, cor e detalhe da armacao.
-                    // Mudado em 28/08/2026 a pedido do Lucas: antes o packshot era DESCARTADO
-                    // quando havia rosto. Se voltar a sair prova com armacao mal posicionada,
-                    // o suspeito e' esse (era o motivo do descarte original).
-                    // Sem rosto detectado → mantém as fotos default (fallback, sem regressão).
+                    // SO A FOTO NO ROSTO (pedido do Lucas em 31/08/2026). Mesma regra da
+                    // Menina Flor: achou rosto, manda so ela. Packshot deitado no fundo branco
+                    // confunde o gerador no tamanho e no posicionamento — foi o que apareceu no
+                    // Milca, onde a variante aponta pro packshot e a foto no rosto era a 4a.
+                    // Entre as fotos COM rosto, prefere a da variante escolhida (cor certa);
+                    // se a foto da variante nao tiver rosto, vale a 1a foto com rosto.
+                    // Sem nenhum rosto detectado, mantem o comportamento antigo (variante +
+                    // galeria) — fallback, sem regressao.
                     try {
                         if (faceDetectPromise) { await Promise.race([faceDetectPromise, new Promise(function (r) { setTimeout(r, 4000); })]); }
-                        // Prioridade da foto PRINCIPAL (a 1a e' a referencia forte do gerador):
-                        //   1) foto da VARIANTE selecionada — ja e' a cor certa no rosto da modelo;
-                        //   2) foto com rosto detectado;
-                        //   3) galeria como veio.
-                        // A variante vem antes do rosto de proposito: mandar a cor errada e' pior
-                        // que mandar packshot, e o detector as vezes nao acha rosto de perfil
-                        // (caso Round Paris, 28/08/2026) e ai a ordem caia na galeria crua.
+                        var _key = function (u) { return String(u || '').split('?')[0]; };
                         var _varImg = (typeof plVariantImg === 'function') ? plVariantImg() : '';
-                        if (_varImg || (_faceUrls && _faceUrls.length)) {
-                            var _key = function (u) { return String(u || '').split('?')[0]; };
+                        if (_faceUrls && _faceUrls.length) {
+                            var _daVariante = _varImg && _faceUrls.filter(function (u) {
+                                return _key(u) === _key(_varImg);
+                            })[0];
+                            allProdImgs = [_daVariante || _faceUrls[0]];
+                        } else if (_varImg) {
                             var _ordenado = [];
                             var _add = function (u) {
                                 if (u && !_ordenado.some(function (x) { return _key(x) === _key(u); })) _ordenado.push(u);
                             };
-                            _add(_varImg);                  // variante selecionada (principal)
-                            (_faceUrls || []).forEach(_add); // depois as fotos com rosto
-                            allProdImgs.forEach(_add);      // depois o resto da galeria
+                            _add(_varImg);
+                            allProdImgs.forEach(_add);
                             allProdImgs = _ordenado;
                         }
                     } catch (e) {}
