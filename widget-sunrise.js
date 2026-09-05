@@ -1292,18 +1292,20 @@
         }
 
         // Foto da VARIANTE selecionada (cor escolhida pelo cliente).
-        // Na Sunrise cada variante de cor tem a foto daquela cor NO ROSTO da modelo, entao
-        // ela e' a melhor referencia possivel: acerta cor E posicionamento de uma vez.
+        // Esta e' a unica referencia confiavel para nao misturar cores da galeria.
         // Fonte: #shipping-variant-id (o tema atualiza a cada clique de cor) cruzado com o
         // JSON [data-variants]. Fallback extra: o botao .js-btn-variation.selected.
         // Se nada casar retorna '' e o fluxo antigo (rosto/galeria) segue igual.
         function plVariantImg() {
             try {
                 var el = document.querySelector('#shipping-variant-id, [name="variant_id"]');
-                var vid = el && String(el.value || '');
+                var vid = String(new URLSearchParams(location.search).get('variant') || (el && el.value) || '');
                 var selBtn = document.querySelector('.js-btn-variation.selected');
                 var selName = selBtn && String(selBtn.getAttribute('data-option') || '').trim().toLowerCase();
-                var blocos = document.querySelectorAll('[data-variants]');
+                // Limita a busca ao produto principal. A pagina tambem possui data-variants
+                // nos cards de produtos relacionados, que podem repetir o mesmo nome de cor.
+                var principal = document.querySelector('#single-product[data-variants], .js-product-detail[data-variants], .js-product-container[data-variants]:not([id^="quick"])');
+                var blocos = principal ? [principal] : document.querySelectorAll('[data-variants]');
                 for (var b = 0; b < blocos.length; b++) {
                     var arr;
                     try { arr = JSON.parse(blocos[b].getAttribute('data-variants')); } catch (e) { continue; }
@@ -2092,34 +2094,16 @@ const fd = new FormData();
                             }
                         }
                     } catch (_) {}
-                    // Detecção de rosto: a foto do óculos NO ROSTO vai como PRINCIPAL (1ª, que
-                    // e' a que o gerador usa de referencia forte), e os packshots seguem junto
-                    // como apoio — dao angulo, cor e detalhe da armacao.
-                    // SO A FOTO NO ROSTO (pedido do Lucas em 31/08/2026). Mesma regra da
-                    // Menina Flor: achou rosto, manda so ela. Packshot deitado no fundo branco
-                    // confunde o gerador no tamanho e no posicionamento — foi o que apareceu no
-                    // Milca, onde a variante aponta pro packshot e a foto no rosto era a 4a.
-                    // Entre as fotos COM rosto, prefere a da variante escolhida (cor certa);
-                    // se a foto da variante nao tiver rosto, vale a 1a foto com rosto.
-                    // Sem nenhum rosto detectado, mantem o comportamento antigo (variante +
-                    // galeria) — fallback, sem regressao.
+                    // Havendo foto vinculada a variante, envia somente ela. Misturar fotos da
+                    // galeria pode introduzir outra cor na geracao. Sem imagem de variante,
+                    // prefere as fotos com rosto e conserva a galeria como fallback final.
                     try {
                         if (faceDetectPromise) { await Promise.race([faceDetectPromise, new Promise(function (r) { setTimeout(r, 4000); })]); }
-                        var _key = function (u) { return String(u || '').split('?')[0]; };
                         var _varImg = (typeof plVariantImg === 'function') ? plVariantImg() : '';
-                        if (_faceUrls && _faceUrls.length) {
-                            var _daVariante = _varImg && _faceUrls.filter(function (u) {
-                                return _key(u) === _key(_varImg);
-                            })[0];
-                            allProdImgs = [_daVariante || _faceUrls[0]];
-                        } else if (_varImg) {
-                            var _ordenado = [];
-                            var _add = function (u) {
-                                if (u && !_ordenado.some(function (x) { return _key(x) === _key(u); })) _ordenado.push(u);
-                            };
-                            _add(_varImg);
-                            allProdImgs.forEach(_add);
-                            allProdImgs = _ordenado;
+                        if (_varImg) {
+                            allProdImgs = [_varImg];
+                        } else if (_faceUrls && _faceUrls.length) {
+                            allProdImgs = _faceUrls.slice();
                         }
                     } catch (e) {}
                     allProdImgs = allProdImgs.slice(0, 4);
