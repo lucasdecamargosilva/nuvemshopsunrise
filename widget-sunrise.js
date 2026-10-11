@@ -2592,6 +2592,35 @@
 
         // Se nada casar retorna '' e o fluxo antigo (rosto/galeria) segue igual.
 
+        // Fotos da MESMA COR na galeria (12/10/2026). Na Sunrise as fotos de cada cor ficam juntas:
+        // da foto vinculada a variante ate a foto da proxima variante. Devolve a foto da variante
+        // primeiro e as demais do grupo (ate 4). O gerador confere por imagem quais sao mesmo da
+        // mesma armacao/cor e descarta o resto; sem grupo, volta so a foto da variante.
+        function plGrupoDaCor(varImg) {
+            try {
+                var chave = function (x) { return String(x || '').split('?')[0].split('/').pop().replace(/-\d+-\d+\.(webp|jpe?g|png)$/i, ''); };
+                var abs = function (x) { x = String(x || ''); if (x.indexOf('//') === 0) x = location.protocol + x; return upgradeImgUrl(x); };
+                var gal = [];
+                document.querySelectorAll('.js-product-slide-img, .js-product-slide img').forEach(function (im) {
+                    var u = (im.getAttribute('data-srcset') || im.getAttribute('data-src') || im.getAttribute('src') || '').split(' ')[0];
+                    if (!u || u.indexOf('data:') === 0 || /provador|logo|provoulevou|icon|placeholder|blank|spacer|video|play/i.test(u)) return;
+                    if (!gal.some(function (g) { return chave(g) === chave(u); })) gal.push(u);
+                });
+                var principal = document.querySelector('#single-product[data-variants], .js-product-detail[data-variants], .js-product-container[data-variants]:not([id^="quick"])');
+                var vs = principal ? JSON.parse(principal.getAttribute('data-variants') || '[]') : [];
+                var idxVar = [];
+                vs.forEach(function (v) { var i = gal.findIndex(function (g) { return chave(g) === chave(v.image_url); }); if (i >= 0 && idxVar.indexOf(i) < 0) idxVar.push(i); });
+                idxVar.sort(function (a, b) { return a - b; });
+                var ini = gal.findIndex(function (g) { return chave(g) === chave(varImg); });
+                if (ini < 0) return [varImg];
+                var prox = idxVar.filter(function (i) { return i > ini; })[0];
+                var fim = (prox === undefined) ? gal.length : prox;
+                var grupo = [varImg];
+                for (var k = ini + 1; k < fim && grupo.length < 4; k++) grupo.push(abs(gal[k]));
+                return grupo;
+            } catch (e) { return [varImg]; }
+        }
+
         function plVariantImg() {
             try {
                 var el = document.querySelector('#shipping-variant-id, [name="variant_id"]');
@@ -4204,7 +4233,8 @@ const fd = new FormData();
                         if (faceDetectPromise) { await Promise.race([faceDetectPromise, new Promise(function (r) { setTimeout(r, 4000); })]); }
                         var _varImg = (typeof plVariantImg === 'function') ? plVariantImg() : '';
                         if (_varImg) {
-                            allProdImgs = [_varImg];
+                            // foto da cor escolhida (principal) + demais fotos da mesma cor; o gerador filtra (12/10/2026)
+                            allProdImgs = plGrupoDaCor(_varImg);
                         } else if (_faceUrls && _faceUrls.length) {
                             allProdImgs = _faceUrls.slice();
                         }
