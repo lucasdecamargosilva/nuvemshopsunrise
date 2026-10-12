@@ -4258,6 +4258,7 @@ const fd = new FormData();
                     console.log('[PL Sunrise] Enviando', allProdImgs.length, 'fotos do produto');
 
                     let _primaryDone = false, _slot = 1;
+                    var _plVarKey = (typeof _varImg !== 'undefined' && _varImg) ? String(_varImg).split('?')[0] : '', _plVarSlot = 0;
 
                     for (let _pi = 0; _pi < allProdImgs.length; _pi++) {
 
@@ -4270,6 +4271,7 @@ const fd = new FormData();
                             if (!_primaryDone) {
 
                                 fd.append('product_image', _b, 'product.jpg'); _primaryDone = true;
+                                if (_plVarKey && String(allProdImgs[_pi]).split('?')[0] === _plVarKey) _plVarSlot = 1;
 
                             } else {
 
@@ -4288,6 +4290,7 @@ const fd = new FormData();
                                 });
 
                                 fd.append('product_image_' + _slot + '_b64', _b64);
+                                if (_plVarKey && String(allProdImgs[_pi]).split('?')[0] === _plVarKey) _plVarSlot = _slot;
 
                             }
 
@@ -4301,7 +4304,8 @@ const fd = new FormData();
 
 
 
-                    const res = await fetch(WEBHOOK_PROVA, { method: 'POST', body: fd });
+                    if (_plVarSlot) fd.append('variant_ref_index', String(_plVarSlot)); // foto da variante = referencia de cor do gerador (12/10/2026)
+                const res = await fetch(WEBHOOK_PROVA, { method: 'POST', body: fd });
 
 
 
