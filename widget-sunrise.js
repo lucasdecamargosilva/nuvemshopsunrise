@@ -4235,6 +4235,19 @@ const fd = new FormData();
                         if (_varImg) {
                             // foto da cor escolhida (principal) + demais fotos da mesma cor; o gerador filtra (12/10/2026)
                             allProdImgs = plGrupoDaCor(_varImg);
+                            // 12/10/2026: a foto NO ROSTO desse grupo (mesma cor) vai como principal
+                            try {
+                                var _det = await getFaceDetector();
+                                if (_det) {
+                                    for (var _gi = 0; _gi < allProdImgs.length; _gi++) {
+                                        var _gimg = await _plLoadCorsImg(allProdImgs[_gi]);
+                                        if (_gimg && await _plImgHasFace(_det, _gimg)) {
+                                            if (_gi > 0) allProdImgs.unshift(allProdImgs.splice(_gi, 1)[0]);
+                                            break;
+                                        }
+                                    }
+                                }
+                            } catch (_ef) {}
                         } else if (_faceUrls && _faceUrls.length) {
                             allProdImgs = _faceUrls.slice();
                         }
