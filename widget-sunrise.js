@@ -2097,6 +2097,18 @@
 
 
     function init() {
+        // --- CHECAGEM DE PLANO (endpoint central pl-plano-check): plano do mês estourado + interruptor ligado => esconde o provador ---
+        try {
+            fetch('https://n8n.segredosdodrop.com/webhook/pl-plano-check', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ dominio: location.hostname }) })
+                .then(function (r) { return r.json(); })
+                .then(function (d) {
+                    if (!d || d.plan_limit !== true) return;
+                    window.__plPlanLimit = true;
+                    try { var st = document.createElement('style'); st.id = 'pl-plan-limit-hide'; st.textContent = '#q-open-ia,.q-btn-trigger-ia,.q-btn-inline-provador,#q-modal-ia{display:none !important}'; document.head.appendChild(st); } catch (_) {}
+                    try { document.querySelectorAll('#q-open-ia,.q-btn-trigger-ia,.q-btn-inline-provador,#q-modal-ia').forEach(function (el) { el.style.setProperty('display', 'none', 'important'); }); } catch (_) {}
+                })
+                .catch(function () {});
+        } catch (_) {}
 
         // Recheca lente aqui: no load do script (via GTM) o body ainda nao tinha sido
 
@@ -4095,6 +4107,7 @@
         // ── GERAÇÃO PRINCIPAL ──
 
         async function runGeneration() {
+            if (window.__plPlanLimit === true) return; // plano do mês estourado: não chama a geração
 
 
 
