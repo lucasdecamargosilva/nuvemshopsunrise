@@ -4298,13 +4298,13 @@ const fd = new FormData();
 
                     allProdImgs = allProdImgs.slice(0, 4);
 
-                    // 14/11/2026 (Lucas): Milca manda SÓ 1 foto fixa — a armação de frente, clara, SEM o clip-on —
+                    // 14/11/2026 (Lucas): Milca manda fotos FIXAS — a armação de frente, clara, SEM o clip-on —
                     // da cor escolhida. As fotos com clip (encaixado ou na mão) e as de trás deixavam a prova sem o formato gatinho.
                     try {
                         if (/milca/i.test(location.pathname) || /milca/i.test((document.querySelector('h1') || {}).innerText || '')) {
                             var _milcaFix = [
-                            ['jr2_7975', 'https://acdn-us.mitiendanube.com/stores/894/881/products/jr2_7974-editar1-cf70fe08037139f10416745174761955-1024-1024.webp'],
-                            ['jr2_7972', 'https://acdn-us.mitiendanube.com/stores/894/881/products/jr2_7971-editar1-f519d7254eeea09e0516745174768910-1024-1024.webp'],
+                            ['jr2_7975', 'https://acdn-us.mitiendanube.com/stores/894/881/products/jr2_7974-editar1-cf70fe08037139f10416745174761955-1024-1024.webp', 'https://lucasdecamargosilva.github.io/nuvemshopsunrise/rostos/milca-preto-rosto.jpg'],
+                            ['jr2_7972', 'https://acdn-us.mitiendanube.com/stores/894/881/products/jr2_7971-editar1-f519d7254eeea09e0516745174768910-1024-1024.webp', 'https://lucasdecamargosilva.github.io/nuvemshopsunrise/rostos/milca-dourado-nude-rosto.jpg'],
                             ['jr2_7636', 'https://acdn-us.mitiendanube.com/stores/894/881/products/jr2_7635-editar1-6a453df5a51dc6ef1c16827332826555-1024-1024.webp'],
                             ['dsc_6377', 'https://acdn-us.mitiendanube.com/stores/894/881/products/dsc_6376-editar-3154b2498d2a84a4e117303112370426-1024-1024.webp'],
                             ['dsc_6395', 'https://acdn-us.mitiendanube.com/stores/894/881/products/dsc_6394-editar-3473e93efb7e14c91a17303117715505-1024-1024.webp'],
@@ -4312,7 +4312,7 @@ const fd = new FormData();
                             ];
                             var _vSel = String((typeof plVariantImg === 'function' ? plVariantImg() : '') || '');
                             var _fx = _milcaFix.find(function (x) { return _vSel.indexOf(x[0]) >= 0; }) || _milcaFix[0];
-                            allProdImgs = [_fx[1]];
+                            allProdImgs = _fx[2] ? [_fx[1], _fx[2]] : [_fx[1]];   // armação de frente (principal) + rosto da modelo recortado, quando há foto dela nessa cor
                             _varImg = '';
                             console.log('[PL Sunrise] Milca: foto fixa de frente', _fx[0]);
                         }
