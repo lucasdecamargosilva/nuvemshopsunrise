@@ -4316,6 +4316,20 @@ const fd = new FormData();
                             _varImg = '';
                             console.log('[PL Sunrise] Milca: foto fixa de frente', _fx[0]);
                         }
+                        // Londres (14/11/2026): TODAS as fotos tem o clip-on (em cima, embaixo ou na mao da modelo) -> foto fixa
+                        // da armacao sozinha, sem clip, feita a partir da foto da loja (rostos/londres-*.jpg). Nunca lente solar.
+                        if (/londres/i.test(location.pathname) || /londres/i.test((document.querySelector('h1') || {}).innerText || '')) {
+                            var _lonFix = [
+                            ['04-04-421', 'https://lucasdecamargosilva.github.io/nuvemshopsunrise/rostos/londres-prata.jpg'],
+                            ['04-05-341', 'https://lucasdecamargosilva.github.io/nuvemshopsunrise/rostos/londres-preto.jpg'],
+                            ['04-05-061', 'https://lucasdecamargosilva.github.io/nuvemshopsunrise/rostos/londres-dourado-preto.jpg']
+                            ];
+                            var _vSelL = String((typeof plVariantImg === 'function' ? plVariantImg() : '') || '');
+                            var _lx = _lonFix.find(function (x) { return _vSelL.indexOf(x[0]) >= 0; }) || _lonFix[1];
+                            allProdImgs = [_lx[1]];
+                            _varImg = '';
+                            console.log('[PL Sunrise] Londres: foto fixa sem clip', _lx[0]);
+                        }
                     } catch (_em) {}
 
                     console.log('[PL Sunrise] Enviando', allProdImgs.length, 'fotos do produto');
